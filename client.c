@@ -1,3 +1,7 @@
+/*
+GUIと連携してUDP（OSAIのほうと標準httpを切り替えれるように）
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
