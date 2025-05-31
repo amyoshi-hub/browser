@@ -94,6 +94,15 @@ int main(int argc, char* argv[]){
     }
     char *filename = argv[3];
     std::string parsedHtml = nana::parseHtml(PORT, use_udp, filename);
-	window(parsedHtml);
+
+    std::cout << "cui/gui [1:2 mode]: ";
+    int mode;
+    std::cin >> mode;
+
+    if(mode == 1){
+        printf("%s", parsedHtml.c_str());
+    } else {
+        window(parsedHtml);
+    }
 }
 
