@@ -1,0 +1,5 @@
+ g++ main.cpp html_analysys.cpp html_element.cpp -o aaa -std=c++17
+
+g++ -c html_parser.cpp client.c html_analysys.cpp html_element.cpp -std=c++17
+ar rcs libhtmlparser.a html_parser.o client.o html_analysys.o html_element.o
+

@@ -1,0 +1,10 @@
+windowsならばglfwのmake時にmingwようにコンパイルすれば良い
+linuxならwaylandとx11の依存関係が満たされる必要が出てくる
+glfw:
+sudo apt install libxkbcommon-dev
+sudo apt install libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
+
+main:
+sudo apt install libgl1-mesa-dev
+
+windowsならこの辺の依存関係は少なくて済む
