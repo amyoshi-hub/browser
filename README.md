@@ -1,7 +1,7 @@
 # browser
 https://browserbook.shift-js.info/chapters/about-js
 <p>
-  TODO：html css js parse, DOM操作,　旧式のhtmlの互換性のモードとの切替、 CUIモードも引数から、というかCUIが先にできるか？, 他ホストとの通信、OPENGLでのレンダリング、UDPのさらなる改良、OSAIにアクセスできるように、AIによるレンダリング、　サンプルとしてコミュニティのゲーム（プラグイン）を開発（VRかraspiとかと連携するとわかりやすい）、　案内役を入れてもいいかも蝶とかVRで見れたらいいよな～、brower->godot->VRとかと連携を取るようなのか？, godotからVRのデータをもらうのが楽かも
+  TODO：html css js parse, DOM操作,　旧式のhtmlの互換性のモードとの切替、 CUIモードも引数から、というかCUIが先にできるか？, 他ホストとの通信、OPENGLでのレンダリング、UDPのさらなる改良、OSAIにアクセスできるように、AIによるレンダリング、　サンプルとしてコミュニティのゲーム（プラグイン）を開発（VRかraspiとかと連携するとわかりやすい）、　案内役を入れてもいいかも蝶とかVRで見れたらいいよな～、brower->godot->VRとかと連携を取るようなのか？, godotからVRのデータをもらうのが楽かも,html parserこれとか？https://github.com/nana2017july/html_parser
 <p>
 ウェブ処理とゲームエンジンを近づけるため、自作が好ましいと思った。
 <p>
