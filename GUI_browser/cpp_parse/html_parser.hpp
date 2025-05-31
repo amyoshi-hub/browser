@@ -5,7 +5,7 @@
 #include "client.h"
 
 namespace nana {
-    std::string parseHtml(int port, int use_udp, const char* filename);
+    std::string parseHtml(char* IP, int port, int use_udp, const char* filename);
 }
 #endif
 

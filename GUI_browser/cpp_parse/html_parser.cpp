@@ -7,8 +7,8 @@
 #include <sstream>
 
 namespace nana {
-    std::string parseHtml(int port, int use_udp, const char* filename) {
-        std::string str = client(port, use_udp, filename);
+    std::string parseHtml(char *IP, int port, int use_udp, const char* filename) {
+        std::string str = client(IP, port, use_udp, filename);
         HtmlSaxParser parser;
         DocumentHtmlSaxParserHandler handler;
         std::istringstream is(str);

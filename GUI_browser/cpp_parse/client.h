@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-char* client(int port, int use_udp, const char* filename);
+char* client(char *IP, int port, int use_udp, const char* filename);
 
 #ifdef __cplusplus
 }

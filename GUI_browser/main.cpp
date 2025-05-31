@@ -49,6 +49,7 @@ void RenderImageOverlay(GLuint texture) {
 
 // グローバル変数
 char url_buffer[256] = "";  // 検索バー入力用バッファ
+char IP_buffer[256] = "";  // 検索バー入力用バッファ
 std::string display_text = "";  // 表示用テキスト
 
 // 検索バーの描画
@@ -57,12 +58,13 @@ void renderSearchBar(int PORT) {
 
     // URL入力フィールド
     ImGui::InputText("Enter file", url_buffer, IM_ARRAYSIZE(url_buffer));
+    ImGui::InputText("Enter IP", IP_buffer, IM_ARRAYSIZE(IP_buffer));
 
     // Goボタンの処理
     if (ImGui::Button("Go")) {
         if (strlen(url_buffer) > 0) {
             // 入力されたURLをパースして表示テキストを更新
-            display_text = nana::parseHtml(PORT, 0, url_buffer);  // サンプルPORTとプロトコル
+            display_text = nana::parseHtml(IP_buffer, PORT, 0, url_buffer);  // サンプルPORTとプロトコル
         }
     }
 
@@ -70,7 +72,7 @@ void renderSearchBar(int PORT) {
 }
 
 // メインウィンドウ関数
-int window(int PORT, const std::string& initial_text) {
+int window(char* IP, int PORT, const std::string& initial_text) {
     // GLFW初期化
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit()) {
@@ -151,16 +153,17 @@ int window(int PORT, const std::string& initial_text) {
 }
 
 int main(int argc, char* argv[]) {
-    if (argc < 3) {
-        std::cerr << "Usage: " << argv[0] << " <port> <protocol (tcp/udp)> <filename>" << std::endl;
+    if (argc < 4) {
+        std::cerr << "Usage: " << argv[0] << " <IP> <port> <protocol (tcp/udp)> <filename>" << std::endl;
         return 1;
     }
 
-    int PORT = std::atoi(argv[1]);
-    int use_udp = (std::strcmp(argv[2], "udp") == 0) ? 1 : 0;
+    char *IP = argv[1];
+    int PORT = std::atoi(argv[2]);
+    int use_udp = (std::strcmp(argv[3], "udp") == 0) ? 1 : 0;
 
-    const char* filename = argv[3];
-    std::string parsedHtml = nana::parseHtml(PORT, use_udp, filename);
+    const char* filename = argv[4];
+    std::string parsedHtml = nana::parseHtml(IP, PORT, use_udp, filename);
 
     std::cout << "cui/gui [1:2 mode]: ";
     int mode;
@@ -169,7 +172,7 @@ int main(int argc, char* argv[]) {
     if (mode == 1) {
         std::cout << parsedHtml << std::endl;
     } else {
-        window(PORT, parsedHtml);
+        window(IP, PORT, parsedHtml);
     }
 
     return 0;
