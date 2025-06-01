@@ -10,7 +10,7 @@ extern char url_buffer[256];
 extern char IP_buffer[256];
 extern std::string display_text;
 
-int window(char* IP, int PORT, const std::string& initial_text);
+int window(const char* IP, int PORT, const std::string& initial_text);
 void renderSearchBar(int PORT);
 void RenderImageOverlay(GLuint texture);
 GLuint LoadTexture(const char* filename);

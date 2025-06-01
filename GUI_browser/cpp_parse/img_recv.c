@@ -14,7 +14,7 @@ typedef struct {
     char data[CHUNK_SIZE];
 } Chunk;
 
-int img_receive(const char* IP, int port) {
+int img_receive(const char* filename, const char* IP, int port) {
     int sockfd;
     struct sockaddr_in server_addr, client_addr;
     socklen_t addr_len = sizeof(client_addr);
@@ -52,7 +52,7 @@ int img_receive(const char* IP, int port) {
 
     printf("Waiting for incoming data...\n");
 
-    output_file = fopen("received_image.jpg", "wb");
+    output_file = fopen(filename, "wb");
     if (!output_file) {
         perror("fopen");
         close(sockfd);

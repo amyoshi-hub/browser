@@ -7,7 +7,7 @@
 
 #define SERVER_IP "127.0.0.1"
 
-char* client(char* IP, int PORT, int use_udp, const char *filename) {
+char* client(const char* IP, int PORT, int use_udp, const char *filename) {
     int sock;
     struct sockaddr_in server_addr;
     char request[256];

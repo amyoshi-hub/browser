@@ -8,7 +8,7 @@
 std::string extractSrcFileName(const std::string& html);
 
 namespace nana {
-    std::string parseHtml(char* IP, int port, int use_udp, const char* filename);
+    std::string parseHtml(const char* IP, int port, int use_udp, const char* filename);
 }
 #endif
 

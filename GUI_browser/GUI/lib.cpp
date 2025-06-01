@@ -73,7 +73,7 @@ void renderSearchBar(int PORT) {
 }
 
 // メインウィンドウ関数
-int window(char* IP, int PORT, const std::string& initial_text) {
+int window(const char* IP, int PORT, const std::string& initial_text) {
     // GLFW初期化
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit()) {
@@ -112,8 +112,10 @@ int window(char* IP, int PORT, const std::string& initial_text) {
 
     std::string img_file_str = extractSrcFileName(display_text);
     const char* img_file_cstr = img_file_str.c_str();
+    GLuint texture;
     if(img_file_cstr){
     	GLuint texture = LoadTexture(img_file_cstr);
+	img_receive(img_file_cstr, IP, 1234);
     }
 
     // メインループ

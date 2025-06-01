@@ -15,7 +15,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    char *IP = argv[1];
+    const char *IP = argv[1];
     int PORT = std::atoi(argv[2]);
     int use_udp = (std::strcmp(argv[3], "udp") == 0) ? 1 : 0;
 
