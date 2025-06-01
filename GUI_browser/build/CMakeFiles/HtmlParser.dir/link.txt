@@ -1,0 +1,2 @@
+/usr/bin/ar qc libHtmlParser.a CMakeFiles/HtmlParser.dir/cpp_parse/html_parser.cpp.o CMakeFiles/HtmlParser.dir/cpp_parse/html_analysys.cpp.o CMakeFiles/HtmlParser.dir/cpp_parse/html_element.cpp.o CMakeFiles/HtmlParser.dir/cpp_parse/client.c.o CMakeFiles/HtmlParser.dir/cpp_parse/img_recv.c.o CMakeFiles/HtmlParser.dir/cpp_parse/img_req.c.o
+/usr/bin/ranlib libHtmlParser.a

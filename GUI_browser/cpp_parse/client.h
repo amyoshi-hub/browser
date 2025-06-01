@@ -7,6 +7,7 @@ extern "C" {
 
 char* client(const char *IP, int port, int use_udp, const char* filename);
 int img_receive(const char*filename, const char* IP, int port);
+void send_filename(const char *filename, const char* IP, int port);
 
 #ifdef __cplusplus
 }

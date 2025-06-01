@@ -10,6 +10,7 @@ add_library(HtmlParser STATIC
     cpp_parse/html_element.cpp
     cpp_parse/client.c
     cpp_parse/img_recv.c
+    cpp_parse/img_req.c
 )
 
 # GUI ライブラリの作成

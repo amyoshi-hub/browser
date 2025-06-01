@@ -115,7 +115,8 @@ int window(const char* IP, int PORT, const std::string& initial_text) {
     GLuint texture;
     if(img_file_cstr){
     	GLuint texture = LoadTexture(img_file_cstr);
-	img_receive(img_file_cstr, IP, 1234);
+	send_filename(img_file_cstr, IP, 8082);
+	img_receive(img_file_cstr, IP, 8082);
     }
 
     // メインループ
