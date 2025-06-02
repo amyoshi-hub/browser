@@ -42,3 +42,6 @@ itch, steam, githubによる公開
 linuxにはmesa入れてもらう
 sudo apt-get install mesa-common-dev
 windowsにはglが入っているからよし
+windows:
+cmake -G "MinGW Makefiles" ..
+make
