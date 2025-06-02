@@ -1,7 +1,7 @@
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
-#include <GLFW/glfw3.h>
+#include "glfw-3.4/include/GLFW/glfw3.h"
 #include <iostream>
 #include <string>
 #include <cstring>

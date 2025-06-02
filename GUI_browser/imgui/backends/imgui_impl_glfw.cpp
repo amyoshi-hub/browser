@@ -99,7 +99,7 @@
 #endif
 
 // GLFW
-#include <GLFW/glfw3.h>
+#include "../glfw-3.4/include/GLFW/glfw3.h"
 
 #ifdef _WIN32
 #undef APIENTRY

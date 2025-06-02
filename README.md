@@ -38,3 +38,7 @@ IOTとの連携、自立型ロボットの制御に（raspi, VR、）DIY、ガ�
 プラグインとしてゲーム、IOT機能を追加できるように、現実とゲームが干渉できる！
 <p>
 itch, steam, githubによる公開
+
+linuxにはmesa入れてもらう
+sudo apt-get install mesa-common-dev
+windowsにはglが入っているからよし
