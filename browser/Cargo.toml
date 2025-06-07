@@ -1,34 +1,11 @@
-# Cargo.toml
 [package]
-name = "browser" # あなたのプロジェクト名
+name = "browser"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
-# Bevy engine (0.13は古いので、0.13.2で安定しているものと仮定します。必要であれば0.16系に上げることも可能です)
-# 0.16.1のエラーが出ていたので、0.13.2ではなく0.16.1を指定します
-# ただし、0.16.1はまだbevy_eguiの公式サポートバージョンではない可能性があるので、
-# まずは0.13.2で試して、うまくいかない場合は0.16.1で再挑戦しましょう。
-# 一旦、エラーメッセージに出ていた0.16.1に合わせておきます。
 bevy = "0.16.1"
-
-# Egui integration for Bevy (エラーメッセージから0.34.1と推測)
-# ただし、bevy 0.16とbevy_egui 0.34の組み合わせは、bevy_eguiのCHANGELOGによるとbevy 0.12 or 0.13に対応しているようです。
-# ここは一旦、エラーメッセージで確認されたバージョンを優先します。
-bevy_egui = "0.34.1" # 0.34.1の場合、0.34で指定
-
-# Argument parsing
-argh = "0.1"
-
-# Asynchronous runtime
+bevy_egui = "0.34.1"
 tokio = { version = "1", features = ["full"] }
-
-# HTTP requests
-reqwest = { version = "0.11", features = ["json"] } # blocking featureは非推奨になるので削除
-
-# Serialization/Deserialization for RON files
-ron = "0.8"
-serde = { version = "1.0", features = ["derive"] }
-
-# For file path manipulation (bevy_asset::FileAssetReader::get_base_path()などで使われていたかもしれません)
-# path_absolutize = "3.1" # 直接使われているか不明なためコメントアウト。エラーが出たら追加
+futures-lite = "1.13"
+reqwest = { version = "0.12", features = ["json", "blocking"], default-features = false }
