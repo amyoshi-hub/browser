@@ -1,10 +1,29 @@
 use bevy::{prelude::*, tasks::{AsyncComputeTaskPool, Task}};
-use bevy_egui::{egui, EguiContexts, EguiPlugin};
+//use bevy_egui::{egui, EguiContexts, EguiPlugin};
+use bevy_egui::EguiPlugin;
 use std::sync::{Arc, Mutex};
-use futures_lite::future; // Task の完了をポーリングするために必要
+//use futures_lite::future; // Task の完了をポーリングするために必要
 //use reqwest;
 mod menu;
 mod img_server;
+mod animation_ui;
+mod animation_logic;
+mod constants;
+
+use bevy::{
+    color::palettes::{
+        basic::WHITE,
+    },
+    prelude::*,
+};
+
+#[cfg(not(target_arch = "wasm32"))]
+use {
+    bevy::{asset::io::file::FileAssetReader, tasks::IoTaskPool}, // setup_assets_programmatically で使用
+    ron::ser::PrettyConfig, // setup_assets_programmatically で使用
+    std::{fs::File, path::Path}, // setup_assets_programmatically で使用
+};
+use argh::FromArgs;
 
 #[derive(Resource, Default)]
 pub struct HtmlContent(pub Arc<Mutex<String>>);
@@ -14,27 +33,43 @@ pub struct CurrentUrl(pub String);
 struct FetchHtmlTask(Task<Result<String, String>>); // Result<成功時の文字列, エラー時の文字列>
 #[derive(Resource)]
 pub struct ShowHtmlViewer(pub bool);
+///Command line arguments for the browser application.
+#[derive(FromArgs, Resource)]
+pub struct Args { // `pub` をつけることで他のモジュールからアクセス可能に
+    /// disables loading of the animation graph asset from disk
+    #[argh(switch)]
+    pub no_load: bool,
+    /// regenerates the asset file; implies `--no-load`
+    #[argh(switch)]
+    pub save: bool,
+}
+/// The [`AnimationGraph`] asset, which specifies how the animations are to
+/// be blended together.
+#[derive(Clone, Resource)]
+pub struct ExampleAnimationGraph(pub Handle<AnimationGraph>); // `pub` をつける
+
+/// The current weights of the three playing animations.
+#[derive(Component, Default)] // Default トレイトを追加
+pub struct ExampleAnimationWeights { // `pub` をつける
+    /// The weights of the three playing animations.
+    pub weights: [f32; 3],
+}
 
 #[derive(Resource, Clone)]
-//pub struct TokioRuntimeHandle(pub TokioRuntimeHandleActual);
 pub struct TokioRuntimeHandle(pub tokio::runtime::Handle);
 
 
-/*
-fn setup_tokio_runtime_handle(mut commands: Commands) {
-    let tokio_handle = TokioRuntimeHandleActual::current();
-    commands.insert_resource(TokioRuntimeHandle(tokio_handle));
-}
-*/
-
-
 fn main() {
- //   let tokio_handle = tokio::runtime::Handle::current();
+
+    #[cfg(not(target_arch = "wasm32"))]
+    let args: Args = argh::from_env();
+    #[cfg(target_arch = "wasm32")]
+    let args = Args::from_args(&[], &[]).unwrap();
 
     let tokio_runtime = tokio::runtime::Runtime::new().expect("Failed to create Tokio runtime");
     let tokio_handle = tokio_runtime.handle().clone(); // Handle を取得
-    App::new()
-        .add_plugins(DefaultPlugins)
+    let mut app = App::new();
+        app.add_plugins(DefaultPlugins)
          .add_plugins(EguiPlugin { enable_multipass_for_primary_context: false })
          .insert_resource(TokioRuntimeHandle(tokio_handle))
         .add_event::<img_server::ImageChunkReceived>()        // ここ
@@ -44,12 +79,13 @@ fn main() {
         .insert_resource(HtmlContent::default())
         .insert_resource(CurrentUrl::default())
         .insert_resource(ShowHtmlViewer(true))
-        //.add_systems(Startup, setup_tokio_runtime_handle)
-
-        // システムの登録
+        .insert_resource(args)
         .add_systems(Startup, (
             img_server::setup_udp_receiver,
             menu::setup_ui_panel,
+            animation_logic::setup_assets,
+            animation_logic::setup_scene,
+            animation_ui::setup_ui,
         ))
         .add_systems(Update, (
             menu::url_input_system,
@@ -59,7 +95,11 @@ fn main() {
             img_server::handle_image_chunks.after(img_server::poll_udp_packets),
             img_server::on_image_reception_complete.after(img_server::handle_image_chunks),
             img_server::on_image_reception_error.after(img_server::handle_image_chunks),
-        ))
-        .run();
+            animation_ui::handle_weight_drag,
+            animation_ui::update_ui,
+            animation_logic::sync_weights,
+        ).chain())
+        .add_systems(Update, animation_logic::init_animations);
+    app.run();
     drop(tokio_runtime);
 }

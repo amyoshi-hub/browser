@@ -11,3 +11,6 @@ futures-lite = "1.13"
 reqwest = { version = "0.12", features = ["json", "blocking"], default-features = false }
 anyhow = "1.0" 
 pnet = "0.28"
+ron = "0.10.1"
+argh = "0.1.13"
+bevy-scene-hook = "10.0.0"
