@@ -1,152 +1,107 @@
-// src/menu.rs
-use bevy_egui::{
-    egui::{self, Color32, TextureId, Vec2}, // TextureHandle, ColorImage は削除
-    EguiContexts,
-};
+use bevy::prelude::*;
+use bevy_egui::{egui, EguiContexts};
+use crate::{TokioRuntimeHandle, AsyncComputeTaskPool};
+use futures_lite::future;
 
-use bevy::{
-    prelude::*,
-    asset::AssetServer, // HandleId は不要なので削除
-    render::render_resource::{Extent3d, TextureDimension, TextureFormat}, // GpuImage は不要なので削除
-    ecs::event::EventWriter,
-};
+// main.rs で定義したリソースやコンポーネントをuseする
+use crate::{CurrentUrl, HtmlContent, FetchHtmlTask, ShowHtmlViewer};
 
-use std::collections::HashMap;
-use tokio::runtime::Handle as TokioHandle;
-use tokio::task;
-
-use crate::{http_req::fetch_html, TokioRuntimeHandle, RegisterImageEvent, UdpReceiver}; // fetch_html を使う
-
-#[derive(Resource, Default)]
-pub struct InputText(pub String);
-
-#[derive(Resource, Default)]
-pub struct HtmlContent(pub String);
-
-#[derive(Default, Resource)]
-pub struct LoadedEguiImage {
-    pub textures: HashMap<String, TextureId>,
-    pub handles: HashMap<String, Handle<Image>>,
-    pub counter: usize,
+pub fn setup_ui_panel(mut current_url: ResMut<CurrentUrl>) {
+    // 初期URLを設定
+    current_url.0 = "https://example.com".to_string();
 }
 
-// 画像をBevyからEguiに登録するイベント
-#[derive(Event, Debug)]
-pub struct ImageRegistrationEvent {
-    pub path: String,
-    pub handle: Handle<Image>,
-}
-
-
-// EguiImageを登録するシステム
-pub fn register_egui_image(
-    mut egui_contexts: EguiContexts,
-    mut loaded_egui_image: ResMut<LoadedEguiImage>,
-    asset_server: Res<AssetServer>,
-    mut images: ResMut<Assets<Image>>,
-    mut events: EventReader<ImageRegistrationEvent>,
+// URL入力とリクエストをトリガーするシステム
+pub fn url_input_system(
+    mut contexts: EguiContexts,
+    mut current_url: ResMut<CurrentUrl>,
+    mut commands: Commands,
+    tokio_runtime: Res<TokioRuntimeHandle>,
+    mut show_html_viewer: ResMut<ShowHtmlViewer>,
 ) {
-    for event in events.read() {
-        let path = &event.path;
-        let handle = &event.handle;
+    let ctx = contexts.ctx_mut();
 
-        if let Some(image) = images.get(handle) {
-            let egui_texture_handle = egui_contexts.add_image(image.clone());
-            loaded_egui_image.textures.insert(path.clone(), egui_texture_handle);
-            loaded_egui_image.handles.insert(path.clone(), handle.clone());
-            println!("Registered Egui image: {}", path);
-        } else {
-            println!("Image not yet loaded for path: {}", path);
+    egui::TopBottomPanel::top("url_panel").show(ctx, |ui| {
+        ui.horizontal(|ui| {
+            ui.label("URL:");
+            let response = ui.text_edit_singleline(&mut current_url.0);
+            if ui.button("Toggle HTML Viewer").clicked() {
+                show_html_viewer.0 = !show_html_viewer.0;
+            }
+                if response.lost_focus() && ctx.input(|i| i.key_pressed(egui::Key::Enter)) {
+                info!("URL entered: {}", current_url.0);
+                let url_to_fetch = current_url.0.clone();
+                let tokio_handle_clone = tokio_runtime.0.clone(); // Handle をクローン
+                let thread_pool = AsyncComputeTaskPool::get();
+
+                let task = thread_pool.spawn(async move {
+                    tokio_handle_clone.spawn(async move { // ★★★ この spawn が重要 ★★★
+                        info!("Attempting to fetch: {}", url_to_fetch);
+                        let fetch_result = reqwest::get(&url_to_fetch).await;
+
+                        match fetch_result {
+                            Ok(res) => {
+                                if res.status().is_success() {
+                                    match res.text().await {
+                                        Ok(text) => Ok(text),
+                                        Err(e) => Err(format!("Failed to get text from response: {}", e)),
+                                    }
+                                } else {
+                                    Err(format!("HTTP Error: {}", res.status()))
+                                }
+                            },
+                            Err(e) => {
+                                Err(format!("Request failed: {}", e))
+                            }
+                        }
+                    }).await.expect("Tokio task join error") // Tokio task の結果を待つ
+                });
+
+                commands.spawn(FetchHtmlTask(task));
+            }
+        });
+    });
+}
+
+// HTMLフェッチタスクの完了を監視し、結果を処理するシステム
+pub fn poll_fetch_html_task(
+    mut commands: Commands,
+    mut query_tasks: Query<(Entity, &mut FetchHtmlTask)>,
+    mut html_content: ResMut<HtmlContent>,
+) {
+    for (entity, mut task) in &mut query_tasks {
+        if let Some(result) = future::block_on(future::poll_once(&mut task.0)) {
+            let mut content = html_content.0.lock().unwrap();
+            match result {
+                Ok(html_text) => {
+                    info!("HTML fetch successful for entity {:?}", entity);
+                    *content = html_text;
+                }
+                Err(e) => {
+                    error!("HTML fetch failed for entity {:?}: {}", entity, e);
+                    *content = format!("Error: {}", e); // エラーメッセージを表示
+                }
+            }
+            commands.entity(entity).despawn(); // タスクエンティティを削除
         }
     }
 }
 
-
-pub fn setup(mut commands: Commands) {
-    // You might want to initialize some UI state here
-}
-
-pub fn search_box(
-    mut contexts: EguiContexts,
-    mut input_text: ResMut<InputText>,
-    runtime_handle: Res<TokioRuntimeHandle>,
-    mut html_content: ResMut<HtmlContent>,
-) {
-    let ctx = contexts.ctx_mut();
-
-    egui::Window::new("Search Box")
-        .default_pos(egui::pos2(10.0, 10.0))
-        .show(ctx, |ui| {
-            ui.text_edit_singleline(&mut input_text.0);
-            if ui.button("Search").clicked() {
-                let url = input_text.0.clone();
-                let html_content_clone = html_content.clone();
-                runtime_handle.0.spawn(async move {
-                    match fetch_html(&url).await {
-                        Ok(html) => {
-                            *html_content_clone.0.lock().unwrap() = html; // Assuming HtmlContent is Arc<Mutex<String>>
-                            println!("Fetched HTML for {}", url);
-                        }
-                        Err(e) => {
-                            eprintln!("Failed to fetch HTML for {}: {}", url, e);
-                        }
-                    }
-                });
-            }
-        });
-}
-
-pub fn ui_example_system(
-    mut contexts: EguiContexts,
-    mut loaded_egui_image: ResMut<LoadedEguiImage>,
-    asset_server: Res<AssetServer>,
-    mut image_events: EventWriter<ImageRegistrationEvent>,
-) {
-    let ctx = contexts.ctx_mut();
-
-    egui::Window::new("Bevy Egui Window")
-        .show(ctx, |ui| {
-            ui.heading("Hello from Bevy Egui!");
-
-            if ui.button("Load Image (Bevy Assets)").clicked() {
-                let image_path = "images/some_image.png"; // 仮の画像パス
-                let handle: Handle<Image> = asset_server.load(image_path);
-                image_events.send(ImageRegistrationEvent {
-                    path: image_path.to_string(),
-                    handle: handle,
-                });
-            }
-
-            for (path, texture_id) in loaded_egui_image.textures.iter() {
-                ui.label(format!("Image: {}", path));
-                ui.image(egui::ImageSource::Texture(egui::TextureId::from_hash(texture_id.hash(), texture_id.context_id()), egui::Vec2::new(100.0, 100.0)));
-            }
-        });
-}
-
-pub fn text_viewer(
+// 取得したHTMLコンテンツをEguiウィンドウに表示するシステム
+pub fn html_viewer_system(
     mut contexts: EguiContexts,
     html_content: Res<HtmlContent>,
+    show_html_viewer: Res<ShowHtmlViewer>,
 ) {
     let ctx = contexts.ctx_mut();
-
-    egui::Window::new("HTML Viewer")
-        .default_size(egui::Vec2::new(400.0, 600.0))
-        .show(ctx, |ui| {
+    if show_html_viewer.0 {
+        egui::Window::new("Html Context View")
+        .default_size(egui::vec2(600.0, 400.0))
+            .show(ctx, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
-                ui.label(html_content.0.clone());
+            let content = html_content.0.lock().unwrap();
+            ui.label(egui::RichText::new(content.as_str()).monospace()); // monospaceで表示
             });
         });
+    }
 }
-
-pub fn handle_html_fetch_task(
-    mut html_content: ResMut<HtmlContent>, // This resource needs to be Arc<Mutex<String>>
-) {
-    // This system is designed to run in Bevy's world,
-    // but the actual HTML fetching (tokio task) is handled by search_box.
-    // So, this system might just be a placeholder or check for updates to html_content.
-    // If HtmlContent is Arc<Mutex<String>>, this system won't directly 'process' the future.
-    // It will just be able to access the updated String in the mutex.
-    // Ensure HtmlContent is indeed Arc<Mutex<String>> or compatible.
-}
-
