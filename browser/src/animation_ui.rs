@@ -6,7 +6,8 @@ use bevy::{
 
 use crate::ExampleAnimationWeights;
 use crate::constants::{HELP_TEXT, NODE_TYPES, NODE_RECTS, HORIZONTAL_LINES, VERTICAL_LINES}; // constants から定数をインポート
-use crate::constants::{NodeRect, Line, NodeType, ClipNode}; // constants から構造体をインポート
+//use crate::constants::{NodeRect, Line, NodeType, ClipNode}; // constants から構造体をインポート
+use crate::constants::{NodeType, ClipNode}; // constants から構造体をインポート
 
 /// Places the help text at the top left of the window.
 pub fn setup_help_text(commands: &mut Commands) {

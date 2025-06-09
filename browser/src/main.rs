@@ -10,29 +10,24 @@ mod animation_ui;
 mod animation_logic;
 mod constants;
 
-use bevy::{
-    color::palettes::{
-        basic::WHITE,
-    },
-    prelude::*,
-};
-
 #[cfg(not(target_arch = "wasm32"))]
-use {
-    bevy::{asset::io::file::FileAssetReader, tasks::IoTaskPool}, // setup_assets_programmatically で使用
-    ron::ser::PrettyConfig, // setup_assets_programmatically で使用
-    std::{fs::File, path::Path}, // setup_assets_programmatically で使用
-};
+
 use argh::FromArgs;
 
 #[derive(Resource, Default)]
 pub struct HtmlContent(pub Arc<Mutex<String>>);
+#[derive(Resource, Default)]
+pub struct OtherAI {
+    pub api_key: String,
+}
 #[derive(Resource, Default)]
 pub struct CurrentUrl(pub String);
 #[derive(Component)]
 struct FetchHtmlTask(Task<Result<String, String>>); // Result<成功時の文字列, エラー時の文字列>
 #[derive(Resource)]
 pub struct ShowHtmlViewer(pub bool);
+#[derive(Resource)]
+pub struct ShowOptionWindow(pub bool);
 ///Command line arguments for the browser application.
 #[derive(FromArgs, Resource)]
 pub struct Args { // `pub` をつけることで他のモジュールからアクセス可能に
@@ -78,7 +73,9 @@ fn main() {
 
         .insert_resource(HtmlContent::default())
         .insert_resource(CurrentUrl::default())
+        .insert_resource(OtherAI::default())
         .insert_resource(ShowHtmlViewer(true))
+        .insert_resource(ShowOptionWindow(false))
         .insert_resource(args)
         .add_systems(Startup, (
             img_server::setup_udp_receiver,
@@ -88,9 +85,10 @@ fn main() {
             animation_ui::setup_ui,
         ))
         .add_systems(Update, (
-            menu::url_input_system,
+            menu::main_input_system,
             menu::poll_fetch_html_task,
             menu::html_viewer_system,
+            menu::option_window,
             img_server::poll_udp_packets,
             img_server::handle_image_chunks.after(img_server::poll_udp_packets),
             img_server::on_image_reception_complete.after(img_server::handle_image_chunks),
