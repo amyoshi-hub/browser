@@ -1,18 +1,17 @@
 use bevy::{prelude::*, tasks::{AsyncComputeTaskPool, Task}};
-//use bevy_egui::{egui, EguiContexts, EguiPlugin};
 use bevy_egui::EguiPlugin;
 use std::sync::{Arc, Mutex};
-//use futures_lite::future; // Task の完了をポーリングするために必要
-//use reqwest;
+
 mod menu;
 mod img_server;
 mod animation_ui;
 mod animation_logic;
 mod constants;
+mod p2p; // p2pモジュールをインポート
+use bevy_tokio_tasks::TokioTasksPlugin; // TokioTasksPlugin をインポート
 
 #[cfg(not(target_arch = "wasm32"))]
-
-use argh::FromArgs;
+use argh::FromArgs; // `argh` をインポート
 
 #[derive(Resource, Default)]
 pub struct HtmlContent(pub Arc<Mutex<String>>);
@@ -28,6 +27,7 @@ struct FetchHtmlTask(Task<Result<String, String>>); // Result<成功時の文字
 pub struct ShowHtmlViewer(pub bool);
 #[derive(Resource)]
 pub struct ShowOptionWindow(pub bool);
+
 ///Command line arguments for the browser application.
 #[derive(FromArgs, Resource)]
 pub struct Args { // `pub` をつけることで他のモジュールからアクセス可能に
@@ -38,6 +38,7 @@ pub struct Args { // `pub` をつけることで他のモジュールからア�
     #[argh(switch)]
     pub save: bool,
 }
+
 /// The [`AnimationGraph`] asset, which specifies how the animations are to
 /// be blended together.
 #[derive(Clone, Resource)]
@@ -55,20 +56,26 @@ pub struct TokioRuntimeHandle(pub tokio::runtime::Handle);
 
 
 fn main() {
-
     #[cfg(not(target_arch = "wasm32"))]
     let args: Args = argh::from_env();
     #[cfg(target_arch = "wasm32")]
     let args = Args::from_args(&[], &[]).unwrap();
 
+    tracing_subscriber::fmt::init();
+
+    // Tokio runtime を作成し、ハンドルを取得します。
+    // このランタイムは `TokioTasksPlugin` が管理します。
     let tokio_runtime = tokio::runtime::Runtime::new().expect("Failed to create Tokio runtime");
-    let tokio_handle = tokio_runtime.handle().clone(); // Handle を取得
+    let tokio_handle = tokio_runtime.handle().clone();
+
     let mut app = App::new();
-        app.add_plugins(DefaultPlugins)
-         .add_plugins(EguiPlugin { enable_multipass_for_primary_context: false })
-         .insert_resource(TokioRuntimeHandle(tokio_handle))
-        .add_event::<img_server::ImageChunkReceived>()        // ここ
-        .add_event::<img_server::ImageReceptionComplete>()    // ここ
+    app.add_plugins(DefaultPlugins)
+        .add_plugins(TokioTasksPlugin::default()) // BevyがTokioランタイムを管理するプラグイン
+        .add_plugins(EguiPlugin { enable_multipass_for_primary_context: false })
+        .insert_resource(TokioRuntimeHandle(tokio_handle)) // TokioRuntimeHandle をリソースとして挿入
+        .add_event::<p2p::P2pUdpPacketReceived>()
+        .add_event::<img_server::ImageChunkReceived>()
+        .add_event::<img_server::ImageReceptionComplete>()
         .add_event::<img_server::ImageReceptionError>()
 
         .insert_resource(HtmlContent::default())
@@ -83,12 +90,15 @@ fn main() {
             animation_logic::setup_assets,
             animation_logic::setup_scene,
             animation_ui::setup_ui,
+            p2p::setup_p2p_udp_listener // P2Pリスナーのセットアップ
         ))
         .add_systems(Update, (
             menu::main_input_system,
             menu::poll_fetch_html_task,
             menu::html_viewer_system,
             menu::option_window,
+            menu::message_window,
+            menu::warning_window,
             img_server::poll_udp_packets,
             img_server::handle_image_chunks.after(img_server::poll_udp_packets),
             img_server::on_image_reception_complete.after(img_server::handle_image_chunks),
@@ -96,8 +106,9 @@ fn main() {
             animation_ui::handle_weight_drag,
             animation_ui::update_ui,
             animation_logic::sync_weights,
+            p2p::poll_p2p_udp_packets // P2Pパケットのポーリング
         ).chain())
         .add_systems(Update, animation_logic::init_animations);
+    
     app.run();
-    drop(tokio_runtime);
 }

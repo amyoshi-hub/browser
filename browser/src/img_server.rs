@@ -5,12 +5,12 @@ use pnet::packet::Packet;
 use std::fs::File;
 use std::io::Write;
 use std::sync::{Arc, Mutex};
-use tokio::runtime::Handle;
+//use tokio::runtime::Handle;
 
 const END_SIG: u32 = 0xFFFFFFFF;
 
 #[derive(Resource, Clone)]
-pub struct TokioRuntimeHandle(pub Handle);
+//pub struct TokioRuntimeHandle(pub Handle);
 
 #[derive(Event)]
 pub struct ImageChunkReceived {
