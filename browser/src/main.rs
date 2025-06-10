@@ -7,8 +7,9 @@ mod img_server;
 mod animation_ui;
 mod animation_logic;
 mod constants;
-mod p2p; // p2pモジュールをインポート
-use bevy_tokio_tasks::TokioTasksPlugin; // TokioTasksPlugin をインポート
+mod p2p;
+mod ffmpeg;
+use bevy_tokio_tasks::TokioTasksPlugin;
 
 #[cfg(not(target_arch = "wasm32"))]
 use argh::FromArgs; // `argh` をインポート
@@ -30,7 +31,7 @@ pub struct ShowOptionWindow(pub bool);
 
 ///Command line arguments for the browser application.
 #[derive(FromArgs, Resource)]
-pub struct Args { // `pub` をつけることで他のモジュールからアクセス可能に
+pub struct Args {
     /// disables loading of the animation graph asset from disk
     #[argh(switch)]
     pub no_load: bool,
@@ -81,6 +82,7 @@ fn main() {
         .insert_resource(HtmlContent::default())
         .insert_resource(CurrentUrl::default())
         .insert_resource(OtherAI::default())
+        .init_non_send_resource::<ffmpeg::VideoResource>()
         .insert_resource(ShowHtmlViewer(true))
         .insert_resource(ShowOptionWindow(false))
         .insert_resource(args)
@@ -90,7 +92,9 @@ fn main() {
             animation_logic::setup_assets,
             animation_logic::setup_scene,
             animation_ui::setup_ui,
-            p2p::setup_p2p_udp_listener // P2Pリスナーのセットアップ
+            p2p::setup_p2p_udp_listener,
+            ffmpeg::initialize_ffmpeg,
+            ffmpeg::init_video_player_system,
         ))
         .add_systems(Update, (
             menu::main_input_system,
@@ -106,7 +110,9 @@ fn main() {
             animation_ui::handle_weight_drag,
             animation_ui::update_ui,
             animation_logic::sync_weights,
-            p2p::poll_p2p_udp_packets // P2Pパケットのポーリング
+            p2p::poll_p2p_udp_packets,
+            ffmpeg::play_video,
+            ffmpeg::ffmpeg_window,
         ).chain())
         .add_systems(Update, animation_logic::init_animations);
     
