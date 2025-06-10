@@ -1,6 +1,7 @@
 use bevy::{prelude::*, tasks::{AsyncComputeTaskPool, Task}};
 use bevy_egui::EguiPlugin;
 use std::sync::{Arc, Mutex};
+use crate::menu::{CrimeReportData, SafetyMetrics};
 
 mod menu;
 mod img_server;
@@ -28,6 +29,14 @@ struct FetchHtmlTask(Task<Result<String, String>>); // Result<成功時の文字
 pub struct ShowHtmlViewer(pub bool);
 #[derive(Resource)]
 pub struct ShowOptionWindow(pub bool);
+#[derive(Resource)]
+pub struct ShowWarningWindow(pub bool);
+#[derive(Resource)]
+pub struct ShowMessageWindow(pub bool);
+#[derive(Resource)]
+pub struct ShowSecurityWindow(pub bool);
+#[derive(Resource)]
+pub struct ShowFfmpegWindow(pub bool);
 
 ///Command line arguments for the browser application.
 #[derive(FromArgs, Resource)]
@@ -70,6 +79,7 @@ fn main() {
     let tokio_handle = tokio_runtime.handle().clone();
 
     let mut app = App::new();
+
     app.add_plugins(DefaultPlugins)
         .add_plugins(TokioTasksPlugin::default()) // BevyがTokioランタイムを管理するプラグイン
         .add_plugins(EguiPlugin { enable_multipass_for_primary_context: false })
@@ -82,9 +92,16 @@ fn main() {
         .insert_resource(HtmlContent::default())
         .insert_resource(CurrentUrl::default())
         .insert_resource(OtherAI::default())
+        //.insert_resource(P2pUdpReceiver::default())
         .init_non_send_resource::<ffmpeg::VideoResource>()
         .insert_resource(ShowHtmlViewer(true))
         .insert_resource(ShowOptionWindow(false))
+        .insert_resource(ShowWarningWindow(false))
+        .insert_resource(ShowSecurityWindow(false))
+        .insert_resource(ShowMessageWindow(false))
+        .insert_resource(ShowFfmpegWindow(false))
+        .init_resource::<CrimeReportData>()
+        .init_resource::<SafetyMetrics>()
         .insert_resource(args)
         .add_systems(Startup, (
             img_server::setup_udp_receiver,
@@ -92,7 +109,7 @@ fn main() {
             animation_logic::setup_assets,
             animation_logic::setup_scene,
             animation_ui::setup_ui,
-            p2p::setup_p2p_udp_listener,
+            //p2p::setup_p2p_udp_listener,
             ffmpeg::initialize_ffmpeg,
             ffmpeg::init_video_player_system,
         ))
@@ -110,9 +127,12 @@ fn main() {
             animation_ui::handle_weight_drag,
             animation_ui::update_ui,
             animation_logic::sync_weights,
-            p2p::poll_p2p_udp_packets,
+            //p2p::poll_p2p_udp_packets,
             ffmpeg::play_video,
             ffmpeg::ffmpeg_window,
+            menu::Security_window,
+            menu::warning_window,
+            menu::message_window,
         ).chain())
         .add_systems(Update, animation_logic::init_animations);
     

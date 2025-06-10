@@ -1,10 +1,9 @@
-use ffmpeg_next::media;
+//use ffmpeg_next::media;
 use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts};
 use std::collections::HashMap;
 use std::path::Path;
 use ffmpeg_next as ffmpeg; // Cargo.toml に "ffmpeg_next = "0.x" を追加してください
-//use ffmpeg_next::codec::threading::Type;
 use ffmpeg_next::format::input;
 use ffmpeg_next::frame::Video;
 use ffmpeg_next::software::scaling::{Context, Flags};
@@ -13,13 +12,9 @@ use bevy::render::render_resource::{TextureDimension, TextureFormat, TextureUsag
 use bevy::render::render_asset::RenderAssetUsages;
 use bevy::color::palettes::css::PINK;
 use tracing::{info, error};
-use crate::OtherAI;
-use crate::ShowOptionWindow;
-//use ffmpeg_next::media::AVMediaType;
+use crate::ShowFfmpegWindow;
 use crate::ffmpeg::egui::load::SizedTexture;
 use ffmpeg_sys_next::AVMediaType;
-
-
 
 // FFmpegの初期化はアプリケーション起動時に一度だけ行います
 pub fn initialize_ffmpeg() {
@@ -119,7 +114,7 @@ pub fn init_video_player_system(
     mut video_resource: NonSendMut<VideoResource>,
 ) {
     //file pass
-    let video_path = "./assets/my_video.mp4"; 
+    let video_path = "./assets/video/video.mp4"; 
 
     match VideoPlayer::new(video_path, images) {
         Ok((video_player, video_player_non_send)) => {
@@ -187,8 +182,7 @@ pub fn play_video(
 
 pub fn ffmpeg_window(
     mut contexts: EguiContexts,
-    show_ffmpeg_window: Res<ShowOptionWindow>,
-    mut other_ai_res: ResMut<OtherAI>,
+    show_ffmpeg_window: Res<ShowFfmpegWindow>,
     video_player_query: Query<(&VideoPlayer, Entity)>,
     images_assets: Res<Assets<Image>>,
 ) {
@@ -221,9 +215,6 @@ pub fn ffmpeg_window(
                     if ui.button("OSAI (Option)").clicked() {
                         info!("GPT Option 2 clicked!");
                     }
-                    ui.label("Other AI API Key:");
-                    ui.text_edit_singleline(&mut other_ai_res.api_key);
-
                     // --- Video display logic starts here ---
                     ui.separator(); // Separator line
                     ui.heading("MP4 Playback"); // Heading
